@@ -1,14 +1,14 @@
 # Dynamic routing and Failover with Bunny Edge Scripting
 
-A little while ago, we were super-excited to [announce Bunny Edge Scripting to the world](https://bunny.net/blog/introducing-bunny-edge-scripting-a-better-way-to-build-and-deploy-applications-at-the-edge/). Since then, we've seen so many exciting and creative uses that people have come up with for Edge Scripts, and we wanted to put something that we thought was really cool: Dynamic Routing and Failover of network requests!
+A little while ago, we were super-excited to [announce Bunny Edge Scripting to the world](https://bunny.net/blog/introducing-bunny-edge-scripting-a-better-way-to-build-and-deploy-applications-at-the-edge/). Since then, we've seen so many exciting and creative uses that people have come up with for Edge Scripts, and we wanted to show you something that we thought was really cool: Dynamic Routing and Failover of network requests!
 
-At the edge of the internet, speed is everything. With Bunny Edge Scripting, you can now route traffic dynamically and fail over without breaking a sweat!
+At the edge of the internet, speed is everything. With Bunny Edge Scripting, you can now route traffic dynamically and failover effortlessly!
 
 ## What is Dynamic Routing and Failover?
 
 ![Dynamic routing diagram](images/edge_routing.png)
 
-"Dynamic routing" usually refers to code that enable us to determine the route traffic takes from a user to one or more servers. With dynamic routing, developers can choose which requests go to which server programmatically based on a whole host of things, from geography, to browser type, and more!
+“Dynamic routing” usually refers to code that enables us to programmatically determine the path traffic takes from a user to one or more servers. Developers can decide which requests go to which server based on factors like location, browser type, and more!
 
 ![Failover diagram](images/failover.png)
 
@@ -20,7 +20,7 @@ When your web service handles thousands - or even millions(!) - of users, you in
 
 That’s where Bunny’s Edge Scripts shine. With a few lines of code, you can programmatically route requests across healthy servers without having to change a thing about your existing set-up. Imagine customers never seeing a 404 again! 🎉
 
-## Let's build it!
+## Let's Get Building!
 
 Let's dive straight in! We're going to work directly with Edge Scripting's built-in UI to code and deploy our dynamic routing and failover code.
 
@@ -30,15 +30,7 @@ First, head over to the [Edge Scripting](https://dash.bunny.net/scriptsg) dashbo
 
 ### Setting Up
 
-You'll be taken through to the "Add Script" screen, which gives us two options
-
-1. Deploying and Edting with GitHub
-    - Great for when more than one person needs to work on your Edge Scripts
-    - Also great for integrating with CI/CD processes
-2. Deploy and Edit on Bunny.net
-    - Great for getting started and iterating fast over your scripts.
-
-We're going to work with Bunny.net's UI, so click "Deploy with Bunny.net"
+You'll be taken through to the "Add Script" screen, which gives us two options - we're gonna dive straight in and select "Deploy and Edit on Bunny.net".
 
 ![A screen grab of the Edge Scripting options](images/screengrabs/2.png)
 
@@ -46,13 +38,15 @@ We'll need to enter a couple of details and make a few decisions before we get t
 
 First up, give your script a name - I've called mine "dynamic-routing-and-failover" but you can call yours whatever you like.
 
-The rest of the settings we can leave as defaults. Once you've you're happy with your scripts name, hit the "Add Script" button at the bottom to create it!
+![A screengrab of the settings for our new Edge Script](images/screengrabs/3.png)
+
+The rest of the settings we can leave as defaults. Once you're happy with the name, hit the "Add Script" button at the bottom to create it!
 
 ### Coding our handler
 
-Once Bunny has created our Edge Script, we'll be taken through to the WebUI where we can edit it. With the Bunny.net SDK, we get a tiny bit of code which let's us respond to HTTP requests. We also get a little preview window where we can see how our Edge Script responds to a request.
+Next, we'll be taken through to the WebUI where we can edit our script. To start with, we get a tiny bit of code which lets us respond to HTTP requests. We also get a little preview window where we can see how our Edge Script responds to a request.
 
-When we've finished our Edge Script it will take any incoming request and pass it through to a target origin to get the requested resource. If the server server is live, we send the response to the user. If the target is offline, we'll then work through the other options until we find a server that is online and get the resource from there. 
+When we've finished our Edge Script it will take any incoming request and pass it through to a target origin to get the requested resource. If the server is live, we send the response to the user. If the target is offline, we'll then work through the other options until we find a live server and get the resource from there. 
 
 If no server is found (oh no!) we'll fail gracefully and let the user know something went wrong.
 
@@ -60,7 +54,7 @@ If no server is found (oh no!) we'll fail gracefully and let the user know somet
 
 ### Setting Some Default Values
 
-Let's add some variables to the top of our edge script to help control the flow of the request and replace the default code in our default handler:
+Let's add some variables at the start of our script to help control the flow of the request, and replace the default code in our default handler:
 
 ```typescript
 import * as BunnySDK from "https://esm.sh/@bunny.net/edgescript-sdk@0.11.2";
@@ -98,11 +92,11 @@ We'll use each of the variables we've set as follows:
 
 We'll set all of these values using environment variables shortly, but for now, the default values will do the trick!
 
-Finally, we've updated our default request handler to call `requestContentFromOriginOptions` which we'll call to handle all of the incoming requests for us.
+Finally, we've updated our default request handler to call `requestContentFromOriginOptions` which we'll call to handle all requests/responses for us.
 
 ### Handling Requests
 
-We're going to break out our routing logic to a separate function than our original handler. This enables us to simplify our logic for routing and failovers by having a single place to call when we want to find an origin that works.
+We're going to break out our logic to a separate function which enables us to simplify handling routing and failovers by having a single place to call when we want to find an origin that works.
 
 In the previous code snippet, there's a line which reads `// CODE BLOCK 2`, add the following code just below that line to your script:
 
@@ -151,15 +145,17 @@ Our `requestContentFromOriginOptions` method accepts two arguments:
 
 In this block of code, we first check whether or not we have any origins available to us to pass requests to. If not, we fail the request immediately, but that should happen rarely (if ever!).
 
-Next, we'll pick an origin from our array of options that we'll pass the original request through to. If we're not doing a round-robin look-up, then we'll just pick the first option in the array. If we are, we'll pick one at random. If somehow no origin is selected, we'll again fail the request.
+Next, we'll pick an origin from our array of options that we pass when calling `requestContentFromOriginOptions`. If we're not doing a round-robin look-up, then we'll just pick the first option in the array. If we are, we'll pick one at random. 
 
-Finally, we use the requesting URL to create a new URL but with our selected origin instead of the original one, and set-up an `AbortController` which we can use to force the fetch request we'll write in a second to fail if it takes too long.
+If somehow no origin is selected, we'll again fail the request.
+
+Finally, we use the requesting URL to create a new URL but with our selected origin instead of the original one, and set-up an `AbortController` which we can use to force the subsequent fetch request to fail if it takes too long.
 
 ### Making a Request
 
 In this next block, we'll use the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to make a request to our selected origin server for resources.
 
-Under `// CODE BLOCK 3` add the following code:
+Under `// CODE BLOCK 3` add the following:
 
 ```typescript
 try {
@@ -199,13 +195,13 @@ try {
 
 First, we `await` a fetch request to the URL we constructed in `CODE BLOCK 2` to get the requested resource from our origin server. If the request resolves before the timeout value (500ms), then we clear the `timeout` timer, and if the status code of the response is `200`, we return the result to the user. Job done!
 
-Well, not quite. We still need to handle the situations where either the request fails or the server we've requested a resource from takes too long to respond.
+Well, not quite. We still need to handle the situations where either the request fails or takes too long to respond.
 
-In both cases, we take the exact same approach to remedy each issue. We call `requestContentFromOriginOptions` again - but each time we do, we pass through a modified options array which no longer has the origin that failed to handle our request along with the original request object.
+In both cases, we take the exact same approach to remedy each issue. We call `requestContentFromOriginOptions` again - but each time we do, we pass through a modified options array which no longer has the origin that failed to handle our request - along with the original request object.
 
-With this approach, requests will be made to each origin until we either get a successful result or we run out of options. 
+With this approach, requests will be made to each origin until we either get a successful result, or we run out of options. 
 
-Click the "Save" button at the top right of the UI when you've finished adding your Edge Script code.
+Click the "Save" button at the top-right of the UI when you've finished adding your Edge Script code.
 
 ### Setting Origin Servers
 
@@ -217,11 +213,11 @@ Click the "Env Configuration" list item just to the left of your code editor. In
 
 These are the IP addresses of two demo servers we've spun up for you to try, but it can be any IP address or hostname you want to test against. Just remember to have each origin be separated by a comma, with no spaces between the values.
 
-Once you've entereed those values, click "Save Variable" and then head back to the code editor by clicking on "Overview" in the menu that you clicked "Env Configuration".
+Once you've entered those values, click "Save Variable" and then head back to the code editor by clicking on "Overview" button to the side.
 
 ### Running our Edge Script
 
-And that's it - a dynamic routing a failover handler in just 80 lines of Typescript!
+And that's it - a dynamic routing and failover handler in just 80 lines of TypeScript!
 
 Now that our script is ready, we can publish it and start making requests.
 
