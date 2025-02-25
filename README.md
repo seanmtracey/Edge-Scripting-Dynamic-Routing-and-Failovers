@@ -12,7 +12,7 @@ At the edge of the internet, speed is everything. With Bunny Edge Scripting, you
 
 ![Failover diagram](images/failover.png)
 
-"Failover" is pretty much the same thing, except it's specifically intended to handle situations where one or more server powering your service has gone down and traffic needs to be routed to healthy instances instead.
+"Failover" is pretty much the same thing, except it's specifically intended to handle situations where one or more servers powering your service has gone down and traffic needs to be routed to healthy instances instead.
 
 ## Why is this important?
 
